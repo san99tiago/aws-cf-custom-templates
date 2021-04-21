@@ -1,0 +1,292 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy a VPC with public/private subnets
+
+Parameters:
+  Environment:
+    Description: Environment for the deployment (dev, qa, pdn)
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - qa
+      - pdn
+    ConstraintDescription: Must be a valid environment.
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to instance.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Description: EC2 instance type.
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.nano
+    ConstraintDescription: Must be a valid EC2 instance type.
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to EC2 instance.
+    Type: String
+    MinLength: "9"
+    MaxLength: "18"
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x .
+
+Mappings:
+  AWSInstanceType2Arch:
+    t2.micro:
+      Arch: HVM64
+    t2.nano:
+      Arch: HVM64
+  AWSRegionArch2AMI:
+    us-east-1:
+      HVM64: ami-0ff8a91507f77f867
+      HVMG2: ami-0a584ac55a7631c0c
+    us-west-2:
+      HVM64: ami-a0cfeed8
+      HVMG2: ami-0e09505bc235aa82d
+    us-west-1:
+      HVM64: ami-0bdb828fd58c52235
+      HVMG2: ami-066ee5fd4a9ef77f1
+    eu-west-1:
+      HVM64: ami-047bb4163c506cd98
+      HVMG2: ami-0a7c483d527806435
+    eu-west-2:
+      HVM64: ami-f976839e
+      HVMG2: NOT_SUPPORTED
+    eu-west-3:
+      HVM64: ami-0ebc281c20e89ba4b
+      HVMG2: NOT_SUPPORTED
+    eu-central-1:
+      HVM64: ami-0233214e13e500f77
+      HVMG2: ami-06223d46a6d0661c7
+    ap-northeast-1:
+      HVM64: ami-06cd52961ce9f0d85
+      HVMG2: ami-053cdd503598e4a9d
+    ap-northeast-2:
+      HVM64: ami-0a10b2721688ce9d2
+      HVMG2: NOT_SUPPORTED
+    ap-northeast-3:
+      HVM64: ami-0d98120a9fb693f07
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-1:
+      HVM64: ami-08569b978cc4dfa10
+      HVMG2: ami-0be9df32ae9f92309
+    ap-southeast-2:
+      HVM64: ami-09b42976632b27e9b
+      HVMG2: ami-0a9ce9fecc3d1daf8
+    ap-south-1:
+      HVM64: ami-0912f71e06545ad88
+      HVMG2: ami-097b15e89dbdcfcf4
+    us-east-2:
+      HVM64: ami-0b59bfac6be064b78
+      HVMG2: NOT_SUPPORTED
+    ca-central-1:
+      HVM64: ami-0b18956f
+      HVMG2: NOT_SUPPORTED
+    sa-east-1:
+      HVM64: ami-07b14488da8ea02a0
+      HVMG2: NOT_SUPPORTED
+    cn-north-1:
+      HVM64: ami-0a4eaf6c4454eda75
+      HVMG2: NOT_SUPPORTED
+    cn-northwest-1:
+      HVM64: ami-6b6a7d09
+      HVMG2: NOT_SUPPORTED
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: myVPC
+        - Key: Environment
+          Value: Dev
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: internet-gateway-dev-happy
+        - Key: Environment
+          Value: Dev
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: !Select
+        - "0"
+        - !GetAZs ""
+      Tags:
+        - Key: Name
+          Value: subnet-public-dev-happy
+        - Key: Environment
+          Value: Dev
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select
+        - "0"
+        - !GetAZs ""
+      Tags:
+        - Key: Name
+          Value: subnet-private-dev-happy
+        - Key: Environment
+          Value: Dev
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: route-table-public-dev-happy
+        - Key: Environment
+          Value: Dev
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: route-table-private-dev-happy
+        - Key: Environment
+          Value: Dev
+
+  PrivateSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  MyPublicEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId:
+        !FindInMap [
+          AWSRegionArch2AMI,
+          !Ref "AWS::Region",
+          !FindInMap [AWSInstanceType2Arch, !Ref InstanceType, Arch],
+        ]
+      AvailabilityZone: !Select
+        - "0"
+        - !GetAZs ""
+      InstanceType: !Ref InstanceType
+      # SecurityGroupIds: [!Ref MyPublicSecurityGroup]
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref PublicSubnet1
+          GroupSet: [!Ref MyPublicSecurityGroup]
+      Tags:
+        - Key: Name
+          Value: ec2-public-dev-happy
+        - Key: Environment
+          Value: Dev
+
+  MyPrivateEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId:
+        !FindInMap [
+          AWSRegionArch2AMI,
+          !Ref "AWS::Region",
+          !FindInMap [AWSInstanceType2Arch, !Ref InstanceType, Arch],
+        ]
+      AvailabilityZone: !Select
+        - "0"
+        - !GetAZs ""
+      InstanceType: !Ref InstanceType
+      SecurityGroupIds: [!Ref MyPrivateSecurityGroup]
+      SubnetId: !Ref PrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: ec2-private-dev-happy
+        - Key: Environment
+          Value: Dev
+
+  MyPublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable access via ports 22 and 80.
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: sg-public-dev-happy
+        - Key: Environment
+          Value: Dev
+
+  MyPrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable access via ports 22.
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+      Tags:
+        - Key: Name
+          Value: sg-private-dev-happy
+        - Key: Environment
+          Value: Dev
+
+Outputs:
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance.
+    Value: !Ref MyPublicEC2Instance
+  AZ:
+    Description: Availability Zone of the newly created EC2 instace.
+    Value: !GetAtt MyPublicEC2Instance.AvailabilityZone
+  PublicDNS:
+    Description: Public DNS Name of the newly created EC2 instance.
+    Value: !GetAtt MyPublicEC2Instance.PublicDnsName
+  VPC:
+    Description: VPC
+    Value: !Ref VPC
+  AZ1:
+    Description: Availability Zone 1
+    Value: !GetAtt
+      - PublicSubnet1
+      - AvailabilityZone
