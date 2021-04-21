@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "$(Environment)"
+    "ParameterValue": "dev"
   },
   {
     "ParameterKey": "KeyName",
