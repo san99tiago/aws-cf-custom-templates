@@ -1,33 +1,72 @@
 # Simple Azure DevOps pipeline to execute CloudFormation examples
 
 trigger:
-- master
+  - master
 
 pool:
   vmImage: ubuntu-latest
-
 
 stages:
   - stage: InitialMessage
     displayName: CF hello message
     jobs:
-    - job: display_initial_message
-      steps:
-        - script: echo Pipeline for tests with CloudFormation...
+      - job: display_initial_message
+        steps:
+          - script: echo Pipeline for tests with CloudFormation...
 
   - stage: UploadCloudFormationResources
     displayName: Upload the CloudFormation templates to AWS S3 Bucket
     jobs:
-    - job: upload_content_to_s3_bucket
-      steps:
-        - task: S3Upload@1
-          inputs:
-            awsCredentials: 'azure-devops-external-agent-dev'
-            regionName: 'us-east-1'
-            bucketName: 'cloudformation-templates-dev-tests'
-            sourceFolder: 'vpcs/vpc-2-subnets-with-ec2s/'
-            globExpressions: |
-              *.json
-              *master.cf.yml
-            targetFolder: 'vpc-samples/vpc-2-subnets-with-ec2s'
-            createBucket: true
+      - job: upload_content_to_s3_bucket
+        steps:
+          - task: S3Upload@1
+            inputs:
+              awsCredentials: "azure-devops-external-agent-dev"
+              regionName: "us-east-1"
+              bucketName: "cloudformation-templates-dev-tests"
+              sourceFolder: "vpcs/vpc-2-subnets-with-ec2s/"
+              globExpressions: |
+                *.json
+                *master.cf.yml
+              targetFolder: "vpc-samples/vpc-2-subnets-with-ec2s"
+              createBucket: true
+
+  - stage: CreateOrUploadCloudFormationStack
+    displayName: Create/Upload the CloudFormation Stack
+    jobs:
+      - job: create_or_upload_cloudformation_stack
+        steps:
+          - task: Bash@3
+            inputs:
+              targetType: "inline"
+              script: |
+                ls;
+                cat vpcs/vpc-2-subnets-with-ec2s/params.json;
+          - task: replacetokens@3
+            inputs:
+              targetFiles: "**/*.json"
+              encoding: "auto"
+              writeBOM: true
+              actionOnMissing: "warn"
+              keepToken: false
+              tokenPrefix: "#{"
+              tokenSuffix: "}#"
+              useLegacyPattern: false
+              enableTransforms: false
+              enableTelemetry: false
+          - task: Bash@3
+            inputs:
+              targetType: "inline"
+              script: |
+                ls;
+                cat vpcs/vpc-2-subnets-with-ec2s/params.json;
+          - task: CloudFormationCreateOrUpdateStack@1
+            inputs:
+              awsCredentials: "azure-devops-external-agent-dev"
+              regionName: "us-east-1"
+              stackName: "VPCWithTwoSubnetsExample"
+              templateSource: "s3"
+              s3BucketName: "cloudformation-templates-dev-tests"
+              s3ObjectKey: "vpc-samples/vpc-2-subnets-with-ec2s/master.cf.yml"
+              templateParametersFile: "vpcs/vpc-2-subnets-with-ec2s/params.json"
+              onFailure: "DELETE"

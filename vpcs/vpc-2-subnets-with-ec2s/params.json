@@ -1,15 +1,15 @@
 [
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "dev"
+    "ParameterValue": "#{env}#"
   },
   {
     "ParameterKey": "KeyName",
-    "ParameterValue": "#{KeyPairName}#"
+    "ParameterValue": "#{key-pair-name}#"
   },
   {
     "ParameterKey": "InstanceType",
-    "ParameterValue": "t2.micro"
+    "ParameterValue": "#{instance-type}#"
   },
   {
     "ParameterKey": "SSHLocation",
