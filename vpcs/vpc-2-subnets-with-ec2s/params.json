@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "KeyName",
-    "ParameterValue": "delete-me-key-pair"
+    "ParameterValue": "#{KeyPairName}#"
   },
   {
     "ParameterKey": "InstanceType",
