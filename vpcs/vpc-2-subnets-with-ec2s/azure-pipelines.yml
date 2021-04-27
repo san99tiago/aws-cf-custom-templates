@@ -1,0 +1,33 @@
+# Simple Azure DevOps pipeline to execute CloudFormation examples
+
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+
+stages:
+  - stage: InitialMessage
+    displayName: CF hello message
+    jobs:
+    - job: display_initial_message
+      steps:
+        - script: echo Pipeline for tests with CloudFormation...
+
+  - stage: UploadCloudFormationResources
+    displayName: Upload the CloudFormation templates to AWS S3 Bucket
+    jobs:
+    - job: upload_content_to_s3_bucket
+      steps:
+        - task: S3Upload@1
+          inputs:
+            awsCredentials: 'azure-devops-external-agent-dev'
+            regionName: 'us-east-1'
+            bucketName: 'cloudformation-templates-dev-tests'
+            sourceFolder: 'vpcs/vpc-2-subnets-with-ec2s/'
+            globExpressions: |
+              *.json
+              *master.cf.yml
+            targetFolder: 'vpc-samples/vpc-2-subnets-with-ec2s'
+            createBucket: true
