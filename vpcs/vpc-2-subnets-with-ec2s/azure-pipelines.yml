@@ -1,7 +1,4 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# Simple Azure DevOps pipeline to execute CloudFormation examples
 
 trigger:
 - master
@@ -14,14 +11,14 @@ stages:
   - stage: InitialMessage
     displayName: CF hello message
     jobs:
-    - job: display-initial-message
+    - job: display_initial_message
       steps:
         - script: echo Pipeline for tests with CloudFormation...
 
   - stage: UploadCloudFormationResources
     displayName: Upload the CloudFormation templates to AWS S3 Bucket
     jobs:
-    - job: display-initial-message
+    - job: upload_content_to_s3_bucket
       steps:
         - task: S3Upload@1
           inputs:
