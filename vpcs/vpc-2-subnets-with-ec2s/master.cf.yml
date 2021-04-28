@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy a VPC with public/private subnets
+Description: Deploys a VPC with public/private subnets
 
 Parameters:
   Environment:
@@ -203,7 +203,7 @@ Resources:
         - !GetAZs ""
       InstanceType: !Ref InstanceType
       # SecurityGroupIds: [!Ref MyPublicSecurityGroup]
-      NetworkInterfaces: 
+      NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           SubnetId: !Ref PublicSubnet1
@@ -230,6 +230,12 @@ Resources:
       InstanceType: !Ref InstanceType
       SecurityGroupIds: [!Ref MyPrivateSecurityGroup]
       SubnetId: !Ref PrivateSubnet1
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y;
+          ls;
+          yum install docker-ce docker-ce-cli containerd.io;
       Tags:
         - Key: Name
           Value: ec2-private-dev-happy
