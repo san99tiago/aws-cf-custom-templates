@@ -42,6 +42,7 @@ stages:
               script: |
                 ls;
                 cat vpcs/vpc-2-subnets-with-ec2s/params.json;
+                cd ..; ls;
           - task: replacetokens@3
             inputs:
               targetFiles: "**/*.json"
@@ -60,6 +61,7 @@ stages:
               script: |
                 ls;
                 cat vpcs/vpc-2-subnets-with-ec2s/params.json;
+                cd ..; ls;
           - task: CloudFormationCreateOrUpdateStack@1
             inputs:
               awsCredentials: "azure-devops-external-agent-dev"
@@ -69,4 +71,4 @@ stages:
               s3BucketName: "cloudformation-templates-dev-tests"
               s3ObjectKey: "vpc-samples/vpc-2-subnets-with-ec2s/master.cf.yml"
               templateParametersFile: "vpcs/vpc-2-subnets-with-ec2s/params.json"
-              onFailure: "DELETE"
+              capabilityAutoExpand: true
