@@ -1,7 +1,7 @@
 # Simple Azure DevOps pipeline to execute CloudFormation examples
 
 trigger:
-  - master
+  - main
 
 pool:
   vmImage: ubuntu-latest
