@@ -104,7 +104,7 @@ Resources:
         - Key: Name
           Value: myVPC
         - Key: Environment
-          Value: Dev
+          Value: !Ref Environment
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -113,7 +113,7 @@ Resources:
         - Key: Name
           Value: internet-gateway-dev-happy
         - Key: Environment
-          Value: Dev
+          Value: Environment
 
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -133,7 +133,7 @@ Resources:
         - Key: Name
           Value: subnet-public-dev-happy
         - Key: Environment
-          Value: Dev
+          Value: !Ref Environment
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -147,7 +147,7 @@ Resources:
         - Key: Name
           Value: subnet-private-dev-happy
         - Key: Environment
-          Value: Dev
+          Value: !Ref Environment
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -157,7 +157,7 @@ Resources:
         - Key: Name
           Value: route-table-public-dev-happy
         - Key: Environment
-          Value: Dev
+          Value: !Ref Environment
 
   PublicRoute:
     Type: AWS::EC2::Route
@@ -180,7 +180,7 @@ Resources:
         - Key: Name
           Value: route-table-private-dev-happy
         - Key: Environment
-          Value: Dev
+          Value: !Ref Environment
 
   PrivateSubnetRouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -208,11 +208,16 @@ Resources:
           DeviceIndex: "0"
           SubnetId: !Ref PublicSubnet1
           GroupSet: [!Ref MyPublicSecurityGroup]
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo yum install docker -y
+          sudo echo "You are my pragmatic friends" >> /tmp/message-from-santi.txt
       Tags:
         - Key: Name
           Value: ec2-public-dev-happy
         - Key: Environment
-          Value: Dev
+          Value: !Ref Environment
 
   MyPrivateEC2Instance:
     Type: AWS::EC2::Instance
@@ -230,17 +235,11 @@ Resources:
       InstanceType: !Ref InstanceType
       SecurityGroupIds: [!Ref MyPrivateSecurityGroup]
       SubnetId: !Ref PrivateSubnet1
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          yum update -y;
-          ls;
-          yum install docker-ce docker-ce-cli containerd.io;
       Tags:
         - Key: Name
           Value: ec2-private-dev-happy
         - Key: Environment
-          Value: Dev
+          Value: !Ref Environment
 
   MyPublicSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -260,7 +259,7 @@ Resources:
         - Key: Name
           Value: sg-public-dev-happy
         - Key: Environment
-          Value: Dev
+          Value: !Ref Environment
 
   MyPrivateSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -276,7 +275,7 @@ Resources:
         - Key: Name
           Value: sg-private-dev-happy
         - Key: Environment
-          Value: Dev
+          Value: !Ref Environment
 
 Outputs:
   InstanceId:
@@ -286,13 +285,11 @@ Outputs:
     Description: Availability Zone of the newly created EC2 instace.
     Value: !GetAtt MyPublicEC2Instance.AvailabilityZone
   PublicDNS:
-    Description: Public DNS Name of the newly created EC2 instance.
+    Description: Public DNS Name of the newly created public EC2 instance.
     Value: !GetAtt MyPublicEC2Instance.PublicDnsName
   VPC:
-    Description: VPC
+    Description: VPC name for the deploy.
     Value: !Ref VPC
-  AZ1:
-    Description: Availability Zone 1
-    Value: !GetAtt
-      - PublicSubnet1
-      - AvailabilityZone
+  Environment:
+    Description: Environment of the deploy.
+    Value: !Ref Environment
