@@ -1,7 +1,11 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploys a VPC with public/private subnets
+Description: Deploys a VPC with public/private subnets and 2 instances on them.
 
 Parameters:
+  AppName:
+    Description: Name of the Application.
+    Type: String
+    Default: sample-name
   Environment:
     Description: Environment for the deployment (dev, qa, pdn)
     Type: String
@@ -102,7 +106,7 @@ Resources:
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: myVPC
+          Value: !Join ["-", [vpc, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: !Ref Environment
 
@@ -111,7 +115,7 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: internet-gateway-dev-happy
+          Value: !Join ["-", [internet-gateway, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: Environment
 
@@ -131,7 +135,7 @@ Resources:
         - !GetAZs ""
       Tags:
         - Key: Name
-          Value: subnet-public-dev-happy
+          Value: !Join ["-", [subnet-public, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: !Ref Environment
 
@@ -145,7 +149,7 @@ Resources:
         - !GetAZs ""
       Tags:
         - Key: Name
-          Value: subnet-private-dev-happy
+          Value: !Join ["-", [subnet-private, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: !Ref Environment
 
@@ -155,7 +159,8 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: route-table-public-dev-happy
+          Value:
+            !Join ["-", [route-table-public, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: !Ref Environment
 
@@ -178,7 +183,8 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: route-table-private-dev-happy
+          Value:
+            !Join ["-", [route-table-private, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: !Ref Environment
 
@@ -202,7 +208,6 @@ Resources:
         - "0"
         - !GetAZs ""
       InstanceType: !Ref InstanceType
-      # SecurityGroupIds: [!Ref MyPublicSecurityGroup]
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
@@ -215,7 +220,7 @@ Resources:
           sudo echo "You are my pragmatic friends" >> /tmp/message-from-santi.txt
       Tags:
         - Key: Name
-          Value: ec2-public-dev-happy
+          Value: !Join ["-", [ec2-public, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: !Ref Environment
 
@@ -237,7 +242,7 @@ Resources:
       SubnetId: !Ref PrivateSubnet1
       Tags:
         - Key: Name
-          Value: ec2-private-dev-happy
+          Value: !Join ["-", [ec2-private, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: !Ref Environment
 
@@ -257,7 +262,7 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: sg-public-dev-happy
+          Value: !Join ["-", [sg-public, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: !Ref Environment
 
@@ -273,23 +278,23 @@ Resources:
           CidrIp: !Ref SSHLocation
       Tags:
         - Key: Name
-          Value: sg-private-dev-happy
+          Value: !Join ["-", [sg-private, !Ref AppName, !Ref Environment]]
         - Key: Environment
           Value: !Ref Environment
 
 Outputs:
-  InstanceId:
-    Description: InstanceId of the newly created EC2 instance.
-    Value: !Ref MyPublicEC2Instance
-  AZ:
-    Description: Availability Zone of the newly created EC2 instace.
-    Value: !GetAtt MyPublicEC2Instance.AvailabilityZone
-  PublicDNS:
-    Description: Public DNS Name of the newly created public EC2 instance.
-    Value: !GetAtt MyPublicEC2Instance.PublicDnsName
-  VPC:
-    Description: VPC name for the deploy.
-    Value: !Ref VPC
   Environment:
     Description: Environment of the deploy.
     Value: !Ref Environment
+  AZ:
+    Description: Availability Zone of the newly created EC2 instace.
+    Value: !GetAtt MyPublicEC2Instance.AvailabilityZone
+  VPC:
+    Description: VPC name for the deploy.
+    Value: !Ref VPC
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance.
+    Value: !Ref MyPublicEC2Instance
+  PublicDNS:
+    Description: Public DNS Name of the newly created public EC2 instance.
+    Value: !GetAtt MyPublicEC2Instance.PublicDnsName

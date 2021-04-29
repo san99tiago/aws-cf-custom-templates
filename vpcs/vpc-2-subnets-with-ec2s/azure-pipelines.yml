@@ -1,4 +1,4 @@
-# Simple Azure DevOps pipeline to execute CloudFormation examples
+# Simple Azure DevOps pipeline to deploy CloudFormation templates
 
 trigger:
   - main
@@ -12,7 +12,7 @@ stages:
     jobs:
       - job: display_initial_message
         steps:
-          - script: echo Pipeline for tests with CloudFormation...
+          - script: echo Pipeline for tests with CloudFormation for $(app-name)...
 
   - stage: UploadCloudFormationResources
     displayName: Upload the CloudFormation templates to AWS S3 Bucket
@@ -23,12 +23,12 @@ stages:
             inputs:
               awsCredentials: "azure-devops-external-agent-dev"
               regionName: "us-east-1"
-              bucketName: "cloudformation-templates-dev-tests"
+              bucketName: "cf-template-$(app-name)-$(env)"
               sourceFolder: "vpcs/vpc-2-subnets-with-ec2s/"
               globExpressions: |
                 *.json
                 *master.cf.yml
-              targetFolder: "vpc-samples/vpc-2-subnets-with-ec2s"
+              targetFolder: "vpc-2-subnets-with-ec2s"
               createBucket: true
 
   - stage: CreateOrUploadCloudFormationStack
@@ -68,7 +68,7 @@ stages:
               regionName: "us-east-1"
               stackName: "VPCWithTwoSubnetsExample"
               templateSource: "s3"
-              s3BucketName: "cloudformation-templates-dev-tests"
-              s3ObjectKey: "vpc-samples/vpc-2-subnets-with-ec2s/master.cf.yml"
+              s3BucketName: "cf-template-$(app-name)-$(env)"
+              s3ObjectKey: "vpc-2-subnets-with-ec2s/master.cf.yml"
               templateParametersFile: "vpcs/vpc-2-subnets-with-ec2s/params.json"
               capabilityAutoExpand: true
