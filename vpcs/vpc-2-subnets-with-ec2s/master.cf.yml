@@ -15,6 +15,15 @@ Parameters:
       - qa
       - pdn
     ConstraintDescription: Must be a valid environment.
+  Region:
+    Description: Region to deploy resources.
+    Type: String
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - us-west-2
+      - sa-east-1
+    ConstraintDescription: Must be a valid AWS Region (based on my rules).
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to instance.
     Type: AWS::EC2::KeyPair::KeyName
@@ -298,3 +307,6 @@ Outputs:
   PublicDNS:
     Description: Public DNS Name of the newly created public EC2 instance.
     Value: !GetAtt MyPublicEC2Instance.PublicDnsName
+  Region:
+    Description: Region where the deploy is done.
+    Value: !Ref Region

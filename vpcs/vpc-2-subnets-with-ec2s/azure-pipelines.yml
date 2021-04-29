@@ -22,7 +22,7 @@ stages:
           - task: S3Upload@1
             inputs:
               awsCredentials: "azure-devops-external-agent-dev"
-              regionName: "us-east-1"
+              regionName: "$(region)"
               bucketName: "cf-template-$(app-name)-$(env)"
               sourceFolder: "vpcs/vpc-2-subnets-with-ec2s/"
               globExpressions: |
@@ -65,8 +65,8 @@ stages:
           - task: CloudFormationCreateOrUpdateStack@1
             inputs:
               awsCredentials: "azure-devops-external-agent-dev"
-              regionName: "us-east-1"
-              stackName: "VPCWithTwoSubnetsExample"
+              regionName: "$(region)"
+              stackName: "$(stack-name)"
               templateSource: "s3"
               s3BucketName: "cf-template-$(app-name)-$(env)"
               s3ObjectKey: "vpc-2-subnets-with-ec2s/master.cf.yml"

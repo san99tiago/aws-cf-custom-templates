@@ -4,6 +4,10 @@
     "ParameterValue": "#{app-name}#"
   },
   {
+    "ParameterKey": "Region",
+    "ParameterValue": "#{region}#"
+  },
+  {
     "ParameterKey": "Environment",
     "ParameterValue": "#{env}#"
   },
