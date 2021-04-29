@@ -66,7 +66,7 @@ stages:
             inputs:
               awsCredentials: "azure-devops-external-agent-dev"
               regionName: "$(region)"
-              stackName: "$(stack-name)"
+              stackName: "$(stack-name)-$(env)"
               templateSource: "s3"
               s3BucketName: "cf-template-$(app-name)-$(env)"
               s3ObjectKey: "vpc-2-subnets-with-ec2s/master.cf.yml"
