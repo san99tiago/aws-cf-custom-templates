@@ -21,7 +21,7 @@ Parameters:
     Default: us-east-1
     AllowedValues:
       - us-east-1
-      - us-west-2
+      - us-east-2
       - sa-east-1
     ConstraintDescription: Must be a valid AWS Region (based on my rules).
   KeyName:
