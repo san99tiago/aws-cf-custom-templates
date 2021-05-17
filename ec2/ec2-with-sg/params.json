@@ -1,0 +1,26 @@
+[
+  {
+    "ParameterKey": "AppName",
+    "ParameterValue": "#{app-name}#"
+  },
+  {
+    "ParameterKey": "Region",
+    "ParameterValue": "#{region}#"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "#{env}#"
+  },
+  {
+    "ParameterKey": "KeyName",
+    "ParameterValue": "#{key-pair-name}#"
+  },
+  {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "#{instance-type}#"
+  },
+  {
+    "ParameterKey": "SSHLocation",
+    "ParameterValue": "0.0.0.0/0"
+  }
+]

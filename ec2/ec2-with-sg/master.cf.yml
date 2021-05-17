@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploys a simple EC2 instance with a custom security group.
+
+Parameters:
+  AppName:
+    Description: Name of the Application.
+    Type: String
+    Default: sample-santi-cool-app
+  Environment:
+    Description: Environment for the deployment (dev, qa, pdn)
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - qa
+      - pdn
+    ConstraintDescription: Must be a valid environment.
+  Region:
+    Description: Region to deploy resources.
+    Type: String
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - us-east-2
+      - us-west-1
+      - us-west-2
+      - sa-east-1
+    ConstraintDescription: Must be a valid AWS Region (based on my rules).
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to instance.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair.
+  InstanceAmi:
+    Description: EC2 instance AMI.
+    Type: String
+    Default: ami-0d5eff06f840b45e9
+  InstanceType:
+    Description: EC2 instance type.
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.nano
+    ConstraintDescription: Must be a valid EC2 instance type.
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to EC2 instance.
+    Type: String
+    MinLength: "9"
+    MaxLength: "18"
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x .
+
+Resources:
+  MyPublicEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId: !Ref InstanceAmi
+      AvailabilityZone: !Select
+        - "0"
+        - !GetAZs ""
+      InstanceType: !Ref InstanceType
+      SecurityGroupIds:
+        - !Ref MyPublicSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # ----- Install Docker in Amazon Linux 2 image -----
+          sudo yum install docker -y
+          sudo service docker start
+          sudo chmod 666 /var/run/docker.sock
+          # ----- Add simple message to "tmp" folder -----
+          sudo echo "You are my pragmatic friend" >> /tmp/message-from-santi.txt
+          # ----- Create santi's folder for anything -----
+          sudo mkdir santi
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [ec2-public, !Ref AppName, !Ref Environment]]
+        - Key: Environment
+          Value: !Ref Environment
+
+  MyPublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable access via ports 22 and 80.
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [sg-public, !Ref AppName, !Ref Environment]]
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  Environment:
+    Description: Environment of the deploy.
+    Value: !Ref Environment
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance.
+    Value: !Ref MyPublicEC2Instance
+  AZ:
+    Description: Availability Zone of the newly created EC2 instace.
+    Value: !GetAtt MyPublicEC2Instance.AvailabilityZone
+  PublicDNS:
+    Description: Public DNS Name of the newly created public EC2 instance.
+    Value: !GetAtt MyPublicEC2Instance.PublicDnsName
+  Region:
+    Description: Region where the deploy is done.
+    Value: !Ref Region
