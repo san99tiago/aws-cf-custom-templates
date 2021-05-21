@@ -1,0 +1,75 @@
+# Simple Azure DevOps pipeline to deploy CloudFormation templates
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  - none
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: InitialMessage
+    displayName: CF hello message
+    jobs:
+      - job: display_initial_message
+        steps:
+          - script: echo Pipeline for tests with CloudFormation for $(app-name)...
+
+  - stage: UploadCloudFormationResources
+    displayName: Upload the CloudFormation templates to AWS S3 Bucket
+    jobs:
+      - job: upload_content_to_s3_bucket
+        steps:
+          - task: S3Upload@1
+            inputs:
+              awsCredentials: "azure-devops-external-agent-dev"
+              regionName: "$(region)"
+              bucketName: "cf-template-$(app-name)-$(env)"
+              sourceFolder: "s3/simple-s3/"
+              globExpressions: |
+                *.json
+                *master.cf.yml
+              targetFolder: "simple-s3"
+              createBucket: true
+
+  - stage: CreateOrUploadCloudFormationStack
+    displayName: Create/Upload the CloudFormation Stack
+    jobs:
+      - job: create_or_upload_cloudformation_stack
+        steps:
+          - task: Bash@3
+            inputs:
+              targetType: "inline"
+              script: |
+                ls;
+                cat s3/simple-s3/params.json;
+                cd ..; ls;
+          - task: replacetokens@3
+            inputs:
+              targetFiles: "**/*.json"
+              encoding: "auto"
+              writeBOM: true
+              actionOnMissing: "warn"
+              keepToken: false
+              tokenPrefix: "#{"
+              tokenSuffix: "}#"
+              useLegacyPattern: false
+              enableTransforms: false
+              enableTelemetry: false
+          - task: Bash@3
+            inputs:
+              targetType: "inline"
+              script: |
+                ls;
+                cat s3/simple-s3/params.json;
+                cd ..; ls;
+          - task: CloudFormationCreateOrUpdateStack@1
+            inputs:
+              awsCredentials: "azure-devops-external-agent-dev"
+              regionName: "$(region)"
+              stackName: "$(stack-name)-$(env)"
+              templateSource: "s3"
+              s3BucketName: "cf-template-$(app-name)-$(env)"
+              s3ObjectKey: "simple-s3/master.cf.yml"
+              templateParametersFile: "s3/simple-s3/params.json"
+              capabilityAutoExpand: true
