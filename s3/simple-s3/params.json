@@ -12,10 +12,6 @@
     "ParameterValue": "#{bucket-name}#"
   },
   {
-    "ParameterKey": "BucketType",
-    "ParameterValue": "#{bucket-type}#"
-  },
-  {
     "ParameterKey": "VersioningConfiguration",
     "ParameterValue": "#{versioning-configuration}#"
   }
