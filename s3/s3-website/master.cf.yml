@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy a simple S3 bucket for static website (need to manually add "index.html" to bucket).
+
+Parameters:
+  AppName:
+    Description: Name of the Application.
+    Type: String
+    Default: sample-santi-cool-website
+  Environment:
+    Description: Environment for the deployment (dev, qa, pdn)
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - qa
+      - pdn
+    ConstraintDescription: Must be a valid environment.
+  BucketName:
+    Description: Name for the S3 bucket.
+    Type: String
+    Default: websites-by-san99tiago
+  VersioningConfiguration:
+    Description: Describes the versioning state of an Amazon S3 bucket.
+    Type: String
+    Default: Suspended
+    AllowedValues:
+      - Suspended
+      - Enabled
+
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      AccessControl: PublicRead
+      BucketName: !Ref BucketName
+      VersioningConfiguration:
+        Status: !Ref VersioningConfiguration
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [s3-bucket, !Ref AppName, !Ref Environment]]
+        - Key: Environment
+          Value: !Ref Environment
+  MyBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MyBucket
+      PolicyDocument:
+        Statement:
+          - Action:
+              - "s3:GetObject"
+            Effect: Allow
+            Resource: !Join
+              - ""
+              - - "arn:aws:s3:::"
+                - !Ref MyBucket
+                - /*
+            Principal: "*"
+
+Outputs:
+  Environment:
+    Description: Environment of the deploy
+    Value: !Ref Environment
+  BucketName:
+    Description: S3 bucket name
+    Value: !Ref MyBucket
+  BucketArn:
+    Description: S3 bucket arn
+    Value: !GetAtt MyBucket.Arn
+  BucketURL:
+    Description: URL to the s3 hosted website
+    Value: !GetAtt MyBucket.WebsiteURL

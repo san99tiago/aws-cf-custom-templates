@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "AppName",
+    "ParameterValue": "#{app-name}#"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "#{env}#"
+  },
+  {
+    "ParameterKey": "BucketName",
+    "ParameterValue": "#{bucket-name}#"
+  },
+  {
+    "ParameterKey": "VersioningConfiguration",
+    "ParameterValue": "#{versioning-configuration}#"
+  }
+]
