@@ -1,5 +1,5 @@
 # Simple Azure DevOps pipeline to deploy CloudFormation templates
-name: $(Build.SourceBranchName)$(Date:yyyyMMdd)$(Rev:.r)
+name: $(Build.SourceBranchName).$(Date:yyyyMMdd)$(Rev:.r)
 
 trigger:
   - none
