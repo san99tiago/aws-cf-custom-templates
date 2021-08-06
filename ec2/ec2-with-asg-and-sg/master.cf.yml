@@ -22,7 +22,7 @@ Parameters:
   pInstanceAmi:
     Description: EC2 instance AMI.
     Type: String
-    Default: ami-0d5eff06f840b45e9
+    Default: ami-0c2b8ca1dad447f8a
   pInstanceType:
     Description: EC2 instance type.
     Type: String
@@ -82,7 +82,7 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     DependsOn: MyPublicSecurityGroup
     Properties:
-      AssociatePublicIpAddress: false
+      AssociatePublicIpAddress: true
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
