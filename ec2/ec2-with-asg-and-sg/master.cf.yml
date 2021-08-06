@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploys EC2s with Security Groups and Auto-Scaling-Groups configurations.
+
+Parameters:
+  pAppName:
+    Description: Name of the Application.
+    Type: String
+    Default: sample-santi-cool-asg-example
+  pEnvironment:
+    Description: Environment for the deployment (dev, qa, pdn)
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - qa
+      - pdn
+    ConstraintDescription: Must be a valid environment.
+  pKeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to instance.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair.
+  pInstanceAmi:
+    Description: EC2 instance AMI.
+    Type: String
+    Default: ami-0d5eff06f840b45e9
+  pInstanceType:
+    Description: EC2 instance type.
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.nano
+    ConstraintDescription: Must be a valid EC2 instance type.
+  pSSHLocation:
+    Description: The IP address range that can be used to SSH to EC2 instance.
+    Type: String
+    MinLength: "9"
+    MaxLength: "18"
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x .
+  pScaleCooldownTime:
+    Description: Time (secs) after a scaling activity completes before other starts.
+    Type: String
+    Default: 300
+  pMinGroupSize:
+    Description: Minimum size of the group for the ASG.
+    Type: String
+    Default: 1
+  pMaxGroupSize:
+    Description: Maximun size of the group for the ASG.
+    Type: String
+    Default: 2
+
+Resources:
+  MyPublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable access via ports 22, 80 and 5000.
+      GroupName:
+        Fn::Join: ["-", ["sec-group", Ref: pAppName, Ref: pEnvironment]]
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref pSSHLocation
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Join ["-", [sg-public, !Ref pAppName, !Ref pEnvironment]]
+        - Key: Environment
+          Value: !Ref pEnvironment
+
+  MyLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    DependsOn: MyPublicSecurityGroup
+    Properties:
+      AssociatePublicIpAddress: false
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: true
+            Encrypted: false
+      ImageId:
+        Ref: pInstanceAmi
+      InstanceMonitoring: false
+      InstanceType:
+        Ref: pInstanceType
+      KeyName:
+        Ref: pKeyName
+      LaunchConfigurationName:
+        !Join ["-", [launch, !Ref pAppName, !Ref pEnvironment]]
+      SecurityGroups:
+        - !GetAtt MyPublicSecurityGroup.GroupId
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -x
+          echo "HELLO MY AWS FRIENDS" >> /tmp/test1.txt
+
+  MyAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn: MyLaunchConfig
+    Properties:
+      AutoScalingGroupName:
+        !Join ["-", ["asg", Ref: pAppName, Ref: pEnvironment]]
+      AvailabilityZones:
+        - !Select ["0", Fn::GetAZs: ""]
+        - !Select ["1", Fn::GetAZs: ""]
+      Cooldown:
+        Ref: pScaleCooldownTime
+      DesiredCapacity:
+        Ref: pMinGroupSize
+      MaxSize:
+        Ref: pMaxGroupSize
+      MinSize:
+        Ref: pMinGroupSize
+      HealthCheckType: EC2
+      LaunchConfigurationName:
+        Ref: MyLaunchConfig
+      MetricsCollection:
+        - Granularity: "1Minute"
+          Metrics:
+            - "GroupMinSize"
+            - "GroupMaxSize"
+            - "GroupDesiredCapacity"
+            - "GroupInServiceInstances"
+            - "GroupPendingInstances"
+            - "GroupStandbyInstances"
+            - "GroupTerminatingInstances"
+            - "GroupTotalInstances"
+      Tags:
+        - Key: Name
+          Value: !Join ["-", ["asg", Ref: pAppName, Ref: pEnvironment]]
+          PropagateAtLaunch: "true"
+        - Key: Environment
+          Value: !Ref pEnvironment
+          PropagateAtLaunch: "true"
+
+  MySimpleScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName:
+        Ref: MyAutoScalingGroup
+      Cooldown:
+        Ref: pScaleCooldownTime
+      PolicyType: SimpleScaling
+      ScalingAdjustment: 1
+
+  MyTargetTrackingScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName:
+        Ref: MyAutoScalingGroup
+      Cooldown:
+        Ref: pScaleCooldownTime
+      PolicyType: "TargetTrackingScaling"
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 80
+
+Outputs:
+  Environment:
+    Description: Environment of the deploy.
+    Value: !Ref pEnvironment

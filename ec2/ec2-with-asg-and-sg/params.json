@@ -1,0 +1,38 @@
+[
+  {
+    "ParameterKey": "pAppName",
+    "ParameterValue": "#{app-name}#"
+  },
+  {
+    "ParameterKey": "pRegion",
+    "ParameterValue": "#{region}#"
+  },
+  {
+    "ParameterKey": "pEnvironment",
+    "ParameterValue": "#{env}#"
+  },
+  {
+    "ParameterKey": "pKeyName",
+    "ParameterValue": "#{key-pair-name}#"
+  },
+  {
+    "ParameterKey": "pInstanceType",
+    "ParameterValue": "#{instance-type}#"
+  },
+  {
+    "ParameterKey": "pSSHLocation",
+    "ParameterValue": "0.0.0.0/0"
+  },
+  {
+    "ParameterKey": "pScaleCooldownTime",
+    "ParameterValue": "#{scale-cooldown-time}"
+  },
+  {
+    "ParameterKey": "pMinGroupSize",
+    "ParameterValue": "#{min-group-size}"
+  },
+  {
+    "ParameterKey": "pMaxGroupSize",
+    "ParameterValue": "#{max-group-size}"
+  }
+]
