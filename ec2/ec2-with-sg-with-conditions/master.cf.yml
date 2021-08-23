@@ -54,7 +54,7 @@ Parameters:
 Conditions:
   areAllPortsAllowed: !Equals
     - something
-    - something
+    - something_different
 
 Resources:
   MyPublicEC2Instance:
@@ -71,14 +71,8 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          # ----- Install Docker in Amazon Linux 2 image -----
-          sudo yum install docker -y
-          sudo service docker start
-          sudo chmod 666 /var/run/docker.sock
           # ----- Add simple message to "tmp" folder -----
-          sudo echo "You are my pragmatic friend" >> /tmp/message-from-santi.txt
-          # ----- Create santi's folder for anything -----
-          sudo mkdir santi
+          sudo echo "You are my friend" >> /tmp/message-from-santi.txt
       Tags:
         - Key: Name
           Value: !Join ["-", [ec2-public, !Ref AppName, !Ref Environment]]
