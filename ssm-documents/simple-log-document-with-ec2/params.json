@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "pAppName",
+    "ParameterValue": "#{app-name}#"
+  },
+  {
+    "ParameterKey": "pEnvironment",
+    "ParameterValue": "#{env}#"
+  },
+  {
+    "ParameterKey": "Region",
+    "ParameterValue": "#{region}#"
+  },
+  {
+    "ParameterKey": "KeyName",
+    "ParameterValue": "#{key-pair-name}#"
+  },
+  {
+    "ParameterKey": "InstanceType",
+    "ParameterValue": "#{instance-type}#"
+  }
+]

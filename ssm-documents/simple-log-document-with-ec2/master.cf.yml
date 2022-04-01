@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploys an EC2 (with SSM permissions) and a simple AWS Systems Manager Document that can be executed on EC2 instances and saves a custom input message, instance IP , instance ID and date in a desired output file on the instance.
+
+Parameters:
+  pAppName:
+    Description: Name of the Application
+    Type: String
+    Default: sample-santi-amazing-document
+  pEnvironment:
+    Description: Environment for the deployment (dev, qa, pdn)
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - qa
+      - pdn
+    ConstraintDescription: Must be a valid environment.
+  Region:
+    Description: Region to deploy resources.
+    Type: String
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - us-east-2
+      - us-west-1
+      - us-west-2
+      - sa-east-1
+    ConstraintDescription: Must be a valid AWS Region (based on my rules).
+  pKeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to instance.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair.
+  pInstanceAmi:
+    Description: EC2 instance AMI.
+    Type: String
+    Default: ami-0c02fb55956c7d316
+  pInstanceType:
+    Description: EC2 instance type.
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.nano
+    ConstraintDescription: Must be a valid EC2 instance type.
+
+
+Resources:
+  # Main systems manager document to execute a command (shell script) on EC2 instances
+  MyAmazingSimpleDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      Content:
+        schemaVersion: "2.2"
+        description: "Command Document to execute in an EC2 instance"
+        parameters:
+          MESSAGE:
+            type: "String"
+            description: "This should be the desired message to save with the execution"
+            default: "This is the default message if no input message is given"
+          OUTPUTDIRECTORY:
+            type: "String"
+            description: "The desired output file to save the info on the instance"
+            default: "/tmp"
+        mainSteps:
+          - action: "aws:runShellScript"
+            name: sample_cool_command
+            inputs:
+              timeoutSeconds: "60"
+              runCommand:
+              - | 
+                #!/bin/bash
+                echo "***** The AWS Systems Manager Document started *****"
+                INSTANCE_ID=$(wget -qO- http://instance-data/latest/meta-data/instance-id)
+                INSTANCE_PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+                DATE=$(date)
+                mkdir -p {{ OUTPUTDIRECTORY }}
+                echo "----------------------------"
+                echo "{{ MESSAGE }}" >> "{{ OUTPUTDIRECTORY }}/cool_log_by_santi.log"
+                echo -e "${INSTANCE_PRIVATE_IP}\t|\t${INSTANCE_ID}\t|\t${DATE}" >> "{{ OUTPUTDIRECTORY }}/cool_log_by_santi.log"
+                echo "***** The AWS Systems Manager Document ended *****"
+      DocumentType: Command
+      TargetType: /AWS::EC2::Instance
+      Tags:
+        - Key: Name
+          Value:
+            !Join [ "-", [ !Ref pAppName, "document", !Ref pEnvironment ] ]
+        - Key: Environment
+          Value: !Ref pEnvironment
+
+  # Role for the EC2 Instance Profile that will be attached to the EC2 Instance
+  MyEC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        !Join [ "-", [ !Ref pAppName, "role", !Ref pEnvironment ] ]
+      # Important: "ManagedPolicyArns" is a list of ARNs of IAM managed policies (default AWS policies)
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      # Important: "AssumeRolePolicyDocument" grants an IAM entity permissions to assume a role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      # Important: "Policies" are the ones that adds the inline policy documents for the IAM role
+      Policies:
+        - PolicyName:
+            !Join [ "-", [ !Ref pAppName, "ssm-access", !Ref pEnvironment ] ]
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: 
+                  - "ssm:*"
+                Effect: Allow
+                Resource: '*'
+
+  # EC2 Instance Profile to pass an IAM role to an EC2 instance
+  MyEC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName:
+        !Join [ "-", [ Ref: pAppName, "instance-profile", !Ref pEnvironment ]]
+      Roles:
+        - !Ref MyEC2InstanceRole
+
+  # Security Group that is going to be attached to the EC2 instance
+  MyPublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable access via port 22 for SSH
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: "0.0.0.0/0"
+      Tags:
+        - Key: Name
+          Value: !Join [ "-", [!Ref pAppName, "sg-public", !Ref pEnvironment] ]
+        - Key: Environment
+          Value: !Ref pEnvironment
+
+  MyPublicEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref pKeyName
+      ImageId: !Ref pInstanceAmi
+      InstanceType: !Ref pInstanceType
+      IamInstanceProfile: !Ref MyEC2InstanceProfile
+      SecurityGroupIds:
+        - !Ref MyPublicSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          echo "***** This is executed in the UserData *****"
+          echo "you can see this logs at /var/log/cloud-init-output.log"
+          echo "***** Santi says hi to you *****"
+      Tags:
+        - Key: Name
+          Value: !Join [ "-", [ !Ref pAppName, "ec2-public", !Ref pEnvironment ] ]
+        - Key: Environment
+          Value: !Ref pEnvironment
