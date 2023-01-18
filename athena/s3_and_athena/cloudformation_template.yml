@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploys an Athena-based solution for S3 querying and data processing.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: General Parameters
+        Parameters:
+          - pAppName
+          - pEnvironment
+      - Label:
+          default: Specific Athena and Glue Parameters
+        Parameters:
+          - pBucketNameRawData
+          - pBucketNameResults
+          - pAthenaDatabaseName
+          - pAthenaTableName
+
+Parameters:
+  pAppName:
+    Description: Name of the Application
+    Type: String
+    Default: santi-sample-athena
+  pEnvironment:
+    Description: Environment for the deployment (dev, qa, pdn)
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - qa
+      - pdn
+    ConstraintDescription: Must be a valid environment.
+  pBucketNameRawData:
+    Type: String
+    Default: san99tiago-athena-raw-data
+    Description: Amazon S3 bucket name for storing Amazon Athena query results.
+    AllowedPattern: (?=^.{3,63}$)(^[a-z0-9]+[a-z0-9\\-]+[a-z0-9]+$)
+  pBucketNameResults:
+    Type: String
+    Default: san99tiago-athena-results
+    Description: Amazon S3 bucket name for raw data that is going to be queried by Amazon Athena.
+    AllowedPattern: (?=^.{3,63}$)(^[a-z0-9]+[a-z0-9\\-]+[a-z0-9]+$)
+  pAthenaDatabaseName:
+    Type: String
+    Default: athena_database_san99tiago
+    Description: Athena Database Name (AWS Glue Database)
+  pAthenaTableName:
+    Type: String
+    Default: athena_table_san99tiago
+    Description: Athena Table Name (AWS Glue Table)
+
+
+Resources:
+  RawDataBucket:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref pBucketNameRawData
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  ResultsBucket:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref pBucketNameResults
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  AthenaWorkGroup:
+    Type: AWS::Athena::WorkGroup
+    Properties:
+      Name: !Join ["-", [!Ref pAppName, "workgroup"]]
+      Description: !Join [" ", ["Custom Athena workgroup for", !Ref pAppName, "solution"]]  
+      State: ENABLED
+      RecursiveDeleteOption: true
+      WorkGroupConfiguration:
+        EnforceWorkGroupConfiguration: True
+        EngineVersion:
+          SelectedEngineVersion: AUTO
+        ResultConfiguration:
+          EncryptionConfiguration:
+            EncryptionOption: SSE_S3
+          OutputLocation: !Sub s3://${pBucketNameResults}/
+
+  GlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Ref pAthenaDatabaseName
+
+  GlueTableSample:
+    Type: AWS::Glue::Table
+    Properties:
+      DatabaseName: !Ref GlueDatabase
+      CatalogId: !Ref AWS::AccountId
+      TableInput:
+        Name: !Ref pAthenaTableName
+        TableType: EXTERNAL_TABLE
+        StorageDescriptor:
+          Columns:
+            - Name: id
+              Type: string
+            - Name: price
+              Type: float
+            - Name: owner
+              Type: string
+            - Name: title
+              Type: string
+            - Name: reviews
+              Type: float
+            - Name: color
+              Type: string
+            - Name: availability
+              Type: string
+            - Name: datetime
+              Type: string
+            - Name: views
+              Type: string
+            - Name: url
+              Type: string
+          Location: !Sub s3://${pBucketNameRawData}/
+          InputFormat: org.apache.hadoop.mapred.TextInputFormat
+          OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+          SerdeInfo:
+            SerializationLibrary: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+            Parameters:
+              serialization.format: ','
+              line.delim: ''
+              field.delim: ','
+
+  NamedQuerySelectAll:
+    Type: AWS::Athena::NamedQuery
+    Properties:
+      Description: !Join [" ", ["Query to show all results from table in ", !Ref pAppName, "solution"]]
+      Database: !Ref GlueDatabase
+      Name: select_all_athena_query
+      WorkGroup: !Ref AthenaWorkGroup
+      QueryString: !Sub |
+        SELECT *
+        FROM "${pAthenaDatabaseName}"."${pAthenaTableName}";
+
+  NamedQuerySelectAllOrderByPrice:
+    Type: AWS::Athena::NamedQuery
+    Properties:
+      Description: !Join [" ", ["Query to show all results from table in ", !Ref pAppName, "solution ordered by price"]]
+      Database: !Ref GlueDatabase
+      Name: select_all_order_by_price_athena_query
+      WorkGroup: !Ref AthenaWorkGroup
+      QueryString: !Sub |
+        SELECT *
+        FROM "${pAthenaDatabaseName}"."${pAthenaTableName}"
+        ORDER BY "price";

@@ -1,0 +1,17 @@
+id,price,owner,title,reviews,color,availability,datetime,views,url
+1,59.99,John Doe,Samsung Galaxy S10,4.5,Black,In Stock,2022-01-01 12:00:00,1000,https://www.example.com/s10
+2,79.99,Jane Smith,Apple iPhone 11 Pro,4.8,Gold,Out of Stock,2022-01-02 14:00:00,2000,https://www.example.com/11pro
+3,49.99,Bob Johnson,Google Pixel 4,4.2,White,In Stock,2022-01-03 16:00:00,1500,https://www.example.com/pixel4
+4,24.99,Amy Lee,Sony PlayStation 5,4.7,Black,In Stock,2022-01-04 18:00:00,3000,https://www.example.com/ps5
+5,99.99,Chris Brown,Microsoft Xbox Series X,4.9,White,Out of Stock,2022-01-05 20:00:00,2500,https://www.example.com/xboxseriesx
+6,39.99,Emily Davis,Nintendo Switch Lite,4.6,Yellow,In Stock,2022-01-06 22:00:00,2000,https://www.example.com/switchlite
+7,34.56,Santiago Garcia,Garmin Watch,4.9,Black,In Stock,2023-01-05 11:00:00,3000,https://www.example.com/garmin
+8,99.99,Michael Wilson,MacBook Pro 16-inch,4.8,Silver,In Stock,2022-01-07 10:00:00,3000,https://www.example.com/macbookpro
+9,29.99,Sophia Lee,Kindle Paperwhite,4.3,White,In Stock,2022-01-08 12:00:00,1000,https://www.example.com/kindle
+10,19.99,David Lee,Amazon Echo Dot,4.5,Black,In Stock,2022-01-09 14:00:00,1500,https://www.example.com/echo
+11,69.99,Amanda Wilson,Bose QuietComfort 35 II,4.9,Black,Out of Stock,2022-01-10 16:00:00,2000,https://www.example.com/quietcomfort
+12,49.99,Emily Davis,Fitbit Charge 4,4.7,Black/Gray,In Stock,2022-01-11 18:00:00,2500,https://www.example.com/charge4
+13,39.99,Jacob Wilson,Anker PowerCore 10000,4.6,Black,In Stock,2022-01-12 20:00:00,3000,https://www.example.com/powercore
+14,89.99,Madison Lee,GoPro HERO8 Black,4.8,Black,In Stock,2022-01-13 22:00:00,3500,https://www.example.com/hero8
+15,59.99,Emily Davis,Canon EOS Rebel T7 DSLR,4.5,Black,Out of Stock,2022-01-14 10:00:00,2000,https://www.example.com/rebelT7
+16,79.99,Joshua Wilson,Nikon D7500 DSLR,4.8,Black,In Stock,2022-01-15 12:00:00,3000,https://www.example.com/D7500
